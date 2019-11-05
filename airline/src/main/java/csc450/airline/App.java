@@ -21,5 +21,9 @@ public final class App {
         var customers = repo.listCustomers();
 
         System.out.println(customers.get(0).name());
+
+
+        // The maven daemon want us to do this :p
+        System.exit(0);
     }
 }
