@@ -17,17 +17,37 @@ public class Customer {
 
   public Customer(ResultSet row) throws SQLException{
     this.id = row.getInt("customer_id");
-    this.email = row.getString("email");
-    this.first_name = row.getString("first_name");
-    this.last_name = row.getString("last_name");
-    this.phone = row.getString("phone");
-    this.address = row.getString("address");
-    this.pin = row.getString("pin");
-    this.seat_preference = row.getString("seat_preference");
-    this.magazine_preference = row.getString("magazine_preference");
+    this.email = row.getString("customer_email");
+    this.first_name = row.getString("customer_first_name");
+    this.last_name = row.getString("customer_last_name");
+    this.phone = row.getString("customer_phone");
+    this.address = row.getString("customer_address");
+    this.pin = row.getString("customer_pin");
+    this.seat_preference = row.getString("customer_seat_preference");
+    this.magazine_preference = row.getString("customer_magazine_preference");
   }
+
+  public static String selects(){
+    return
+        "  customer.customer_id         AS customer_id,"
+      + "  customer.email               AS customer_email,"
+      + "  customer.first_name          AS customer_first_name,"
+      + "  customer.last_name           AS customer_last_name,"
+      + "  customer.phone               AS customer_phone,"
+      + "  customer.address             AS customer_address,"
+      + "  customer.pin                 AS customer_pin,"
+      + "  customer.seat_preference     AS customer_seat_preference,"
+      + "  customer.magazine_preference AS customer_magazine_preference ";
+  }
+
+  public static String joins(){return " ";}
 
   public String name(){
     return (this.first_name + " " + this.last_name);
+  }
+
+  @Override
+  public String toString(){
+    return this.name();
   }
 }
