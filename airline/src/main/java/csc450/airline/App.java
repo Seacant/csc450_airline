@@ -47,6 +47,7 @@ public final class App extends Application {
     stage.show();
   }
 
+
   public Parent homePage() {
     var reservation_button = new Button("Reserve Flight");
     reservation_button.setOnAction(value -> this.stage.getScene().setRoot(this.reservationPage()));
@@ -225,7 +226,7 @@ public final class App extends Application {
           Duration depart_time;
           try{
             var depart_parts = depart_time_str.split(":");
-            
+
             if(depart_parts.length != 3) {
               throw new NumberFormatException();
             }
@@ -248,7 +249,7 @@ public final class App extends Application {
           Duration arrival_time;
           try{
             var arrival_parts = arrival_time_str.split(":");
-            
+
             if(arrival_parts.length != 3) {
               throw new NumberFormatException();
             }
