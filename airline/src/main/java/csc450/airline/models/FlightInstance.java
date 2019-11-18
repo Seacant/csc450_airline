@@ -15,7 +15,7 @@ public class FlightInstance {
   public Date departure_time;
   public Date arrival_time;
 
-  public FlightInstance(ResultSet row) throws SQLException{
+  public FlightInstance(ResultSet row) throws SQLException {
     this.flight_plan = new FlightPlan(row);
     this.date = row.getDate("flight_date");
     this.aircraft = new Aircraft(row);
@@ -27,29 +27,28 @@ public class FlightInstance {
     this.arrival_time = row.getDate("flight_arrival_time");
   }
 
-  // These need to match the field names in the constructor
-  public static String selects(){
-    return
-      // Aircraft.aircraft_selects() + ", " +
-      FlightPlan.selects() + ", " +
-      "  flight.flight_date         AS flight_date," +
-      "  flight.price_economy       AS flight_price_economy," +
-      "  flight.price_business      AS flight_price_business," +
-      "  flight.can_book            AS flight_can_book," + 
-      "  flight_view.distance       AS flight_distance," + 
-      "  flight_view.departure_time AS flight_departure_time," + 
-      "  flight_view.arrival_time   AS flight_arrival_time "
-    ;
+
+  public static String table() {
+    return "flight";
   }
 
-  public static String joins(){
-    return 
-      "INNER JOIN flight_schedule " +
-      "  ON flight_schedule.flight_id = flight.flight_id "
-      + FlightPlan.joins() +
-      "INNER JOIN flight_view " +
-      "  ON flight_view.flight_id = flight.flight_id " +
-      "  AND flight_view.flight_date = flight.flight_date "
-    ;
+  // These need to match the field names in the constructor
+  public static String selects() {
+    return Aircraft.selects() + ", "
+      + FlightPlan.selects() + ", "
+      + "  flight.flight_date         AS flight_date,"
+      + "  flight.price_economy       AS flight_price_economy,"
+      + "  flight.price_business      AS flight_price_business,"
+      + "  flight.can_book            AS flight_can_book,"
+      + "  flight_view.distance       AS flight_distance,"
+      + "  flight_view.departure_time AS flight_departure_time,"
+      + "  flight_view.arrival_time   AS flight_arrival_time";
+  }
+
+  public static String joins() {
+    return String.join(" ", "INNER JOIN", FlightPlan.table(),
+        "ON flight_schedule.flight_id = flight.flight_id", FlightPlan.joins(),
+        "INNER JOIN flight_view", "ON flight_view.flight_id = flight.flight_id",
+        "AND flight_view.flight_date = flight.flight_date");
   }
 }
