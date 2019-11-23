@@ -17,7 +17,7 @@ public class FlightPlan {
   public FlightPlan(ResultSet row) throws SQLException {
     this.id = row.getInt("flight_plan_id");
     this.origin_airport = new Airport(row, Airport.AirportRole.ORIGIN);
-    this.origin_airport = new Airport(row, Airport.AirportRole.DESTINATION);
+    this.destination_airport = new Airport(row, Airport.AirportRole.DESTINATION);
     this.airline = new Airline(row);
     this.aircraft = new Aircraft(row);
     this.departure = row.getString("flight_plan_departure");

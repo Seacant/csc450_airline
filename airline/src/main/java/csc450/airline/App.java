@@ -7,6 +7,8 @@ import csc450.airline.utility.EntityNotFoundException;
 import javafx.application.Application;
 import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.stage.Stage;
 import javafx.scene.control.Button;
 import javafx.scene.control.ListView;
@@ -18,14 +20,13 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.collections.ObservableList;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener.Change;
 
 
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.sql.Date;
 
 /**
@@ -34,6 +35,7 @@ import java.sql.Date;
 public final class App extends Application {
   private Repository repository;
   private Stage stage;
+  private Customer currentCustomer;
 
   public void start(Stage stage) throws SQLException {
     // Get our datastore
@@ -51,6 +53,9 @@ public final class App extends Application {
     var reservation_button = new Button("Reserve Flight");
     reservation_button.setOnAction(value -> this.stage.getScene().setRoot(this.reservationPage()));
 
+    var buy_button = new Button("Pay for reserved Flight");
+    buy_button.setOnAction(value -> this.stage.getScene().setRoot(this.buyPage()));
+
     var analytics_button = new Button("View Analytics");
     analytics_button.setOnAction(value -> this.stage.getScene().setRoot(this.analyticsPage()));
 
@@ -58,23 +63,226 @@ public final class App extends Application {
     flight_management_button
         .setOnAction(value -> this.stage.getScene().setRoot(this.flightManagementPage()));
 
-    return new VBox(reservation_button, analytics_button, flight_management_button);
+    return new VBox(reservation_button, buy_button, analytics_button, flight_management_button);
   }
 
   public Parent reservationPage() {
     // First, we need the user to 'log in' ;)
+    var flight_search_params = new VBox();
+    var flight_results_pane = new VBox();
+    var flight_reservation_error_pane = new VBox();
     try {
-      ObservableList<Customer> users =
-          FXCollections.observableList(this.repository.listCustomers());
+      ListView<Customer> users = new ListView<Customer>(FXCollections.observableList(this.repository.listCustomers())) ;
 
-      users.addListener((Change<? extends Customer> c) -> System.err.println("Test?"));
+      users.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<Customer>(){
 
-      return new HBox(new ListView<Customer>(users));
+        @Override
+        public void changed(
+          ObservableValue<? extends Customer> change,
+          Customer oldValue,
+          Customer newValue
+        ){
+          App.this.currentCustomer = newValue;
+          System.err.println(newValue);
+
+          var origin_input = new TextField();
+          var destination_input = new TextField();
+          var date_input = new TextField();
+          var tix_business_input = new TextField();
+          var tix_economy_input = new TextField();
+
+          var submit_button = new Button("Submit");
+
+          flight_search_params.getChildren().setAll(
+            new Label("Search"),
+            new HBox(new Label("Origin airport"), origin_input),
+            new HBox(new Label("Destination airport"), destination_input),
+            new HBox(new Label("Flight date"), date_input),
+            new HBox(new Label("Business tickets amount"), tix_business_input),
+            new HBox(new Label("Economy tickets amount"), tix_economy_input),
+            submit_button
+          );
+          flight_results_pane.getChildren().clear();
+
+          submit_button.setOnAction(submit_change -> {
+            var origin_str = origin_input.getText();
+            var destination_str = destination_input.getText();
+            var date_str = date_input.getText();
+            var tix_business_str = tix_business_input.getText();
+            var tix_economy_str = tix_economy_input.getText();
+
+            try {
+              Airport origin;
+              try {
+                origin = repository.getAirportByCode(origin_str);
+              }
+              catch(EntityNotFoundException e){
+                flight_results_pane.getChildren().setAll(new Label("Origin airport not found"));
+                return;
+              }
+
+              Airport destination;
+              try {
+                destination = repository.getAirportByCode(destination_str);
+              }
+              catch(EntityNotFoundException e){
+                flight_results_pane.getChildren().setAll(new Label("Destination airport not found"));
+                return;
+              }
+
+              Date date;
+              try {
+                date = Date.valueOf(date_str);
+              }
+              catch(IllegalArgumentException e) {
+                flight_results_pane.getChildren().setAll(new Label("Invalid date. Use yyyy-mm-dd"));
+                return;
+              }
+
+              Integer tix_business;
+              try {
+                if(tix_business_str == ""){
+                  tix_business_str = "0";
+                }
+                tix_business = Integer.parseInt(tix_business_str);
+              }
+              catch(NumberFormatException e){
+                flight_results_pane.getChildren().setAll(new Label("Please provide a numebr for business tickets"));
+                return;
+              }
+
+              Integer tix_economy;
+              try {
+                if(tix_economy_str == ""){
+                  tix_economy_str = "0";
+                }
+                tix_economy = Integer.parseInt(tix_economy_str);
+              }
+              catch(NumberFormatException e){
+                flight_results_pane.getChildren().setAll(new Label("Please provide a numebr for economy tickets"));
+                return;
+              }
+
+              var flights = repository.findFlightInstanceByAirportsAndDate(origin, destination, date);
+              
+              var table = new TableView<>(FXCollections.observableList(flights));
+
+              // Set the columns
+              var name_column = new TableColumn<FlightInstance, String>("Airline");
+              name_column.setCellValueFactory(
+                  reservation -> new ReadOnlyStringWrapper(reservation.getValue().flight_plan.airline.name));
+
+              var id_column = new TableColumn<FlightInstance, Number>("Flight ID");
+              id_column.setCellValueFactory(
+                  reservation -> new ReadOnlyIntegerWrapper(reservation.getValue().flight_plan.id));
+
+              var price_column = new TableColumn<FlightInstance, Number>("Price");
+              price_column.setCellValueFactory(
+                reservation -> new ReadOnlyIntegerWrapper(
+                  reservation.getValue().price_business * tix_business +
+                  reservation.getValue().price_economy * tix_economy
+                )
+              );
+
+              table.getColumns().setAll(name_column, id_column, price_column);
+
+              table.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<FlightInstance>() {
+                @Override
+                public void changed(
+                  ObservableValue<? extends FlightInstance> change,
+                  FlightInstance oldValue,
+                  FlightInstance newValue
+                ){
+                  try {
+                    repository.createReservationFromData(App.this.currentCustomer, newValue, tix_business, tix_economy);
+                    flight_reservation_error_pane.getChildren().setAll(new Label("Flight booked!"));
+                  }
+                  catch(SQLException e){
+                    e.printStackTrace();
+                    flight_reservation_error_pane.getChildren().setAll(new Label("Probelm with Database"));
+                  }
+                }
+              });
+
+              flight_results_pane.getChildren().setAll(table);
+            }
+            catch(SQLException e){
+              e.printStackTrace();
+              flight_results_pane.getChildren().setAll(new Label("Problem with the DB :("));
+            }
+          });
+        }
+      });
+
+      return new HBox(users, new VBox(flight_search_params, flight_results_pane, flight_reservation_error_pane));
     } catch (SQLException e) {
       return new HBox(new Label("Unable to connect to DB :("));
     }
   }
 
+  public Parent buyPage() {
+    try {
+      var output = new VBox();
+      var users = new ListView<Customer>(FXCollections.observableList(this.repository.listCustomers()));
+      var reservations = new ListView<Reservation>();
+      var billing_address_input = new TextField();
+      var submit = new Button("Submit");
+      submit.setDisable(true);
+
+      users.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<Customer>(){
+        @Override
+        public void changed(ObservableValue<? extends Customer> observable, Customer oldValue, Customer newValue) {
+          if(oldValue == null || oldValue.id != newValue.id){
+            try{
+              reservations.setItems(FXCollections.observableList(repository.findReservationsByCustomer(newValue)));
+              reservations.setDisable(false);
+              submit.setDisable(false);
+            }
+            catch(SQLException e){
+              // Clear items and disable
+              reservations.setItems(FXCollections.observableList(new ArrayList<Reservation>()));;
+              reservations.setDisable(true);
+              submit.setDisable(true);
+            }
+          }
+        }
+      });      
+
+      submit.setOnAction(submit_action -> {
+        var reservation = reservations.getSelectionModel().getSelectedItem();
+        var billing_address = billing_address_input.getText();
+
+        try{
+          repository.payForReservation(reservation, billing_address);
+        }
+        catch(SQLException e){
+          e.printStackTrace();
+          output.getChildren().setAll(
+            new Label("Reservation update failed")
+          );
+          return;
+        }
+
+        output.getChildren().setAll(
+          new Label("Reservation updated")
+        );
+      });
+
+      return new HBox(
+        users,
+        reservations,
+        new VBox(
+          new HBox(new Label("Billing Address"), billing_address_input),
+          submit,
+          output
+        )
+      );
+    }
+    catch(SQLException e){
+      e.printStackTrace();
+      return new HBox(new Label("Error with database :("));
+    }
+  }
 
   @SuppressWarnings("unchecked") // Don't ask :(
   public Parent analyticsPage() {
@@ -96,7 +304,6 @@ public final class App extends Application {
               .setAll(new Label("Invalid value provided for Flight ID"));
           return;
         }
-
 
         Date flight_date;
         try {
@@ -191,7 +398,7 @@ public final class App extends Application {
         try {
           Airport origin;
           try {
-            repository.getAirportByCode(origin_airport_code);
+            origin = repository.getAirportByCode(origin_airport_code);
           }
           catch(EntityNotFoundException e){
             query_results_interface.getChildren().setAll(
@@ -202,7 +409,7 @@ public final class App extends Application {
 
           Airport destination;
           try {
-            repository.getAirportByCode(destination_airport_code);
+            destination = repository.getAirportByCode(destination_airport_code);
           }
           catch(EntityNotFoundException e){
             query_results_interface.getChildren().setAll(
@@ -213,7 +420,7 @@ public final class App extends Application {
 
           Airline airline;
           try {
-            repository.getAirlineByCode(airline_code);
+            airline = repository.getAirlineByCode(airline_code);
           }
           catch(EntityNotFoundException e){
             query_results_interface.getChildren().setAll(
@@ -243,6 +450,7 @@ public final class App extends Application {
             query_results_interface.getChildren().setAll(
               new Label("Invalid depart_time. Please format using HH:MM:SS")
             );
+            return;
           }
 
           Duration arrival_time;
@@ -266,11 +474,12 @@ public final class App extends Application {
             query_results_interface.getChildren().setAll(
               new Label("Invalid arrival_time. Please format using HH:MM:SS")
             );
+            return;
           }
 
-          double economy_price;
+          double price_economy;
           try {
-            economy_price = Double.parseDouble(economy_price_str);
+            price_economy = Double.parseDouble(economy_price_str);
           }
           catch(IllegalArgumentException e){
             query_results_interface.getChildren().setAll(
@@ -279,9 +488,9 @@ public final class App extends Application {
             return;
           }
 
-          double business_price;
+          double price_business;
           try {
-            business_price = Double.parseDouble(business_price_str);
+            price_business = Double.parseDouble(business_price_str);
           }
           catch(IllegalArgumentException e){
             query_results_interface.getChildren().setAll(
@@ -289,6 +498,21 @@ public final class App extends Application {
             );
             return;
           }
+
+          try{
+            repository.createFlightPlanFromData(origin, destination, depart_time, arrival_time, price_economy, price_business, airline);
+          }
+          catch(EntityAlreadyExistsException e){
+            e.printStackTrace();
+            query_results_interface.getChildren().setAll(
+              new Label("A Flight Plan already exists with that data")
+            );
+          }
+
+          query_results_interface.getChildren().setAll(
+            new Label("Flight Plan Created")
+          );
+          
         }
         catch(SQLException e){
           e.printStackTrace();
@@ -312,8 +536,6 @@ public final class App extends Application {
     fill_flights_button.setOnAction(value -> {
       try {
         var flight_plans = repository.listFlightPlans();
-
-        System.err.println(flight_plans.get(0).arrival);
 
         var start = LocalDate.now();
         var end = LocalDate.now().plusDays(30);
