@@ -15,5 +15,10 @@ Then, you need to install the project through maven. Make sure you're in `airlin
 
 To run, either use your IDE's built-in method or use 
 ```
-    mvn compile exec:java
+    mvn javafx:run
+```
+
+To compile for release, use
+```
+    mvn clean compile assembly:single
 ```
