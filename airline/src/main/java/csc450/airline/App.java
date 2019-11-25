@@ -280,6 +280,7 @@ public final class App extends Application {
     var query_parameter_inferface = new VBox();
     var query_results_interface = new VBox();
 
+    // 1
     var reservations_analytics_pane_button = new Button("Find Customers on a flight");
     reservations_analytics_pane_button.setOnAction(value -> {
       query_results_interface.getChildren().clear();
@@ -358,6 +359,75 @@ public final class App extends Application {
           new HBox(new Label("Flight Date:"), flightDateInput), submit_button);
     });
 
+    // 2
+    var sales_trends_analytics_pane_button = new Button("Sales trends");
+    sales_trends_analytics_pane_button.setOnAction(value -> {
+      try {
+        var results = repository.getAirlineAnalytics();
+        var table = new TableView<AnalyticResult<Airline>>(FXCollections.observableList(results));
+
+        // Set the columns
+        var name_column = new TableColumn<AnalyticResult<Airline>, String>("Name");
+        name_column.setCellValueFactory(
+          reservation -> new ReadOnlyStringWrapper(reservation.getValue().target.name)
+        );
+        /*
+          result.put("airline_total_price",    Integer.toString(rows.getInt("airline_Total_price")));
+          result.put("business_total_tickets", Integer.toString(rows.getInt("business_Total_tickets")));
+          result.put("economy_total_tickets",  Integer.toString(rows.getInt("economy_Total_tickets")));
+          result.put("price_2019",             Integer.toString(rows.getInt("Price_2019")));
+          result.put("price_2018",             Integer.toString(rows.getInt("Price_2018")));
+          result.put("price_2017",             Integer.toString(rows.getInt("Price_2017")));
+        */
+
+        var airline_total_price = new TableColumn<AnalyticResult<Airline>, String>("Airline Total Price");
+        airline_total_price.setCellValueFactory(
+          reservation -> new ReadOnlyStringWrapper(reservation.getValue().results.get("airline_total_price"))
+        );
+
+        var business_total_tickets = new TableColumn<AnalyticResult<Airline>, String>("Business Total Tickets");
+        business_total_tickets.setCellValueFactory(
+          reservation -> new ReadOnlyStringWrapper(reservation.getValue().results.get("business_total_tickets"))
+        );
+
+        var economy_total_tickets = new TableColumn<AnalyticResult<Airline>, String>("Economy Total Tickets");
+        economy_total_tickets.setCellValueFactory(
+          reservation -> new ReadOnlyStringWrapper(reservation.getValue().results.get("economy_total_tickets"))
+        );
+
+        var price_2019 = new TableColumn<AnalyticResult<Airline>, String>("2019 Price");
+        price_2019.setCellValueFactory(
+          reservation -> new ReadOnlyStringWrapper(reservation.getValue().results.get("price_2019"))
+        );
+
+        var price_2018 = new TableColumn<AnalyticResult<Airline>, String>("2018 Price");
+        price_2018.setCellValueFactory(
+          reservation -> new ReadOnlyStringWrapper(reservation.getValue().results.get("price_2018"))
+        );
+
+        var price_2017 = new TableColumn<AnalyticResult<Airline>, String>("2017 Price");
+        price_2017.setCellValueFactory(
+          reservation -> new ReadOnlyStringWrapper(reservation.getValue().results.get("price_2017"))
+        );
+
+        table.getColumns().setAll(
+          name_column, 
+          airline_total_price, 
+          business_total_tickets,
+          economy_total_tickets,
+          price_2019,
+          price_2018,
+          price_2017
+        );
+
+        query_results_interface.getChildren().setAll(table);
+      }
+      catch(SQLException e){
+
+      }
+    });
+
+    // 3
     var top_airline_analytics_pane_button = new Button("Find Top Airline Company");
     top_airline_analytics_pane_button.setOnAction(value -> {
       try {
@@ -380,6 +450,7 @@ public final class App extends Application {
     });
 
 
+    // 4
     var top_airline_companies_anaiytics_pane_button = new Button("Top Airline company ");
     top_airline_companies_anaiytics_pane_button.setOnAction(value -> {
       try {
@@ -401,6 +472,7 @@ public final class App extends Application {
       }
     });
 
+    // 5
     var top_frequent_flyer_analytics_pane_button = new Button("Top Frequent Flyer");
     top_frequent_flyer_analytics_pane_button.setOnAction(value -> {
       try {
@@ -422,6 +494,7 @@ public final class App extends Application {
       }
     });
 
+    // 6
     var platinum_customer_frequent_flyer_month_analytics_pane_button =
         new Button("Frequent Flying Month for Platinum Customers");
     platinum_customer_frequent_flyer_month_analytics_pane_button.setOnAction(value -> {
@@ -445,6 +518,7 @@ public final class App extends Application {
       }
     });
 
+    // 7
     var most_reservation_analytics_pane_button = new Button("Customers who made most reservation");
     most_reservation_analytics_pane_button.setOnAction(value -> {
       try {
@@ -467,10 +541,15 @@ public final class App extends Application {
     });
 
     return new HBox(
-        new VBox(reservations_analytics_pane_button, top_airline_analytics_pane_button,
-            top_frequent_flyer_analytics_pane_button, top_airline_companies_anaiytics_pane_button,
-            platinum_customer_frequent_flyer_month_analytics_pane_button,
-            most_reservation_analytics_pane_button),
+        new VBox(
+          reservations_analytics_pane_button,
+          sales_trends_analytics_pane_button,
+          top_airline_analytics_pane_button,
+          top_frequent_flyer_analytics_pane_button,
+          top_airline_companies_anaiytics_pane_button,
+          platinum_customer_frequent_flyer_month_analytics_pane_button,
+          most_reservation_analytics_pane_button
+        ),
         new VBox(query_parameter_inferface, query_results_interface));
   }
 

@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Month;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
 import oracle.jdbc.pool.OracleDataSource;
@@ -310,6 +311,75 @@ public class Repository {
   }
 
 
+  public ArrayList<AnalyticResult<Airline>> getAirlineAnalytics() throws SQLException {
+    var statement = this.connection.prepareStatement(String.join(" ",
+      "With Big_table as (",
+      "  select al.AIRLINE_CODE, al.NAME, f.FLIGHT_ID, f.FLIGHT_DATE, r.RESERVATION_ID, r.CUSTOMER_ID, r.TICKETS_BUSINESS, r.TICKETS_ECONOMY, r.PRICE, r.HAS_PAID",
+      "      from airline al",
+      "      inner join FLETCHERT1.flight_schedule fs",
+      "        on al.airline_code = fs.airline_code",
+      "      inner join fletchert1.flight f",
+      "        on fs.flight_id = f.flight_id",
+      "      inner join fletchert1.reservation r", "            on f.flight_id = r.flight_id",
+      "          and f.flight_date = r.flight_date),", "Airline_Price as (",
+      "  select airline_code, sum(price) as Airline_Total_Price", "   from big_table",
+      "  where has_paid = 'Y'", "   group by airline_code),", "Eco_Class_Price as (",
+      "  select airline_code, sum(tickets_economy) as Economy_Total_Tickets",
+      "  from big_table", "    where has_paid = 'Y'", "    group by airline_code),",
+      "Bus_Class_Price as (",
+      "    select airline_code, sum(tickets_business) as Business_Total_Tickets",
+      "    from big_table", "    where has_paid = 'Y'", "    group by airline_code),",
+      "Price_2019 as (", "    select airline_code, sum(price) as Year_2019", "    from big_table",
+      "    where has_paid = 'Y' and extract(year from flight_date) = 2019",
+      "    group by airline_code),", "Price_2018 as (",
+      "    select airline_code, sum(price) as Year_2018", "    from big_table",
+      "    where has_paid = 'Y' and extract(year from flight_date) = 2018",
+      "    group by airline_code),", "Price_2017 as (",
+      "    select airline_code, sum(price) as Year_2017", "    from big_table",
+      "    where has_paid = 'Y' and extract(year from flight_date) = 2017",
+      "    group by airline_code)",
+      "SELECT",
+      Airline.selects(),",",
+      "  airline_Total_price, business_Total_tickets,",
+      "  economy_Total_tickets, nvl(Year_2019, 0) as Price_2019,",
+      "  nvl(Year_2018, 0) as Price_2018,",
+      "  nvl(Year_2017, 0) as Price_2017",
+      "from airline_price ",
+      "inner join airline",
+      "  ON airline.airline_code = airline_price.airline_code",
+      Airline.joins(),
+      "full outer join eco_class_price ",
+      "  on airline_price.airline_code = eco_class_price.airline_code",
+      "full outer join bus_class_price",
+      "  on bus_class_price.airline_code = eco_class_price.airline_code",
+      "full outer join price_2019 ",
+      "  on bus_class_price.airline_code = price_2019.airline_code",
+      "full outer join price_2018",
+      "  on bus_class_price.airline_code = Price_2018.airline_code",
+      "full outer join price_2017",
+      "  on bus_class_price.airline_code = Price_2017.airline_code"
+    ));
+
+      var rows = statement.executeQuery();
+
+      var results = new ArrayList<AnalyticResult<Airline>>();
+      while (rows.next()) {
+          var airline = new Airline(rows);
+
+          var result = new HashMap<String,String>();
+          result.put("airline_total_price",    Integer.toString(rows.getInt("airline_Total_price")));
+          result.put("business_total_tickets", Integer.toString(rows.getInt("business_Total_tickets")));
+          result.put("economy_total_tickets",  Integer.toString(rows.getInt("economy_Total_tickets")));
+          result.put("price_2019",             Integer.toString(rows.getInt("Price_2019")));
+          result.put("price_2018",             Integer.toString(rows.getInt("Price_2018")));
+          result.put("price_2017",             Integer.toString(rows.getInt("Price_2017")));
+
+          results.add(new AnalyticResult<Airline>(airline, result));
+      }
+      statement.close();
+
+      return results;
+  }
 
   //3
   public ArrayList<Airline> getTopAirlineBySales()throws SQLException {
