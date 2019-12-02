@@ -519,7 +519,7 @@ public final class App extends Application {
     });
 
     // 7
-    var most_reservation_analytics_pane_button = new Button("Customers who made most reservation");
+    var most_reservation_analytics_pane_button = new Button("Customers who made most unpaid reservation");
     most_reservation_analytics_pane_button.setOnAction(value -> {
       try {
         query_parameter_inferface.getChildren().clear();

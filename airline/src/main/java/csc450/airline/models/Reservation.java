@@ -19,7 +19,7 @@ public class Reservation {
     this.tickets_business = row.getInt("reservation_tickets_business");
     this.tickets_economy = row.getInt("reservation_tickets_economy");
     this.price = row.getInt("reservation_price");
-    this.has_paid = row.getString("reservation_has_paid") == "Y" ? true : false;
+    this.has_paid = "Y".equals(row.getString("reservation_has_paid")) ? true : false;
     this.billing_address = row.getString("reservation_billing_address");
   }
 
@@ -51,6 +51,11 @@ public class Reservation {
   @Override
   public String toString(){
     return 
+      (
+        this.has_paid 
+          ? ""
+          : "(X) "
+      ) + 
       this.flight.flight_plan.origin_airport.city +
       " -> " +
       this.flight.flight_plan.destination_airport.city + 
