@@ -363,6 +363,8 @@ public final class App extends Application {
     var sales_trends_analytics_pane_button = new Button("Sales trends");
     sales_trends_analytics_pane_button.setOnAction(value -> {
       try {
+        query_results_interface.getChildren().clear();
+        query_parameter_inferface.getChildren().clear();
         var results = repository.getAirlineAnalytics();
         var table = new TableView<AnalyticResult<Airline>>(FXCollections.observableList(results));
 
@@ -371,43 +373,35 @@ public final class App extends Application {
         name_column.setCellValueFactory(
           reservation -> new ReadOnlyStringWrapper(reservation.getValue().target.name)
         );
-        /*
-          result.put("airline_total_price",    Integer.toString(rows.getInt("airline_Total_price")));
-          result.put("business_total_tickets", Integer.toString(rows.getInt("business_Total_tickets")));
-          result.put("economy_total_tickets",  Integer.toString(rows.getInt("economy_Total_tickets")));
-          result.put("price_2019",             Integer.toString(rows.getInt("Price_2019")));
-          result.put("price_2018",             Integer.toString(rows.getInt("Price_2018")));
-          result.put("price_2017",             Integer.toString(rows.getInt("Price_2017")));
-        */
 
-        var airline_total_price = new TableColumn<AnalyticResult<Airline>, String>("Airline Total Price");
+        var airline_total_price = new TableColumn<AnalyticResult<Airline>, Number>("Airline Total Price");
         airline_total_price.setCellValueFactory(
-          reservation -> new ReadOnlyStringWrapper(reservation.getValue().results.get("airline_total_price"))
+          reservation -> new ReadOnlyIntegerWrapper(Integer.parseInt(reservation.getValue().results.get("airline_total_price")))
         );
 
-        var business_total_tickets = new TableColumn<AnalyticResult<Airline>, String>("Business Total Tickets");
+        var business_total_tickets = new TableColumn<AnalyticResult<Airline>, Number>("Business Total Tickets");
         business_total_tickets.setCellValueFactory(
-          reservation -> new ReadOnlyStringWrapper(reservation.getValue().results.get("business_total_tickets"))
+          reservation -> new ReadOnlyIntegerWrapper(Integer.parseInt(reservation.getValue().results.get("business_total_tickets")))
         );
 
-        var economy_total_tickets = new TableColumn<AnalyticResult<Airline>, String>("Economy Total Tickets");
+        var economy_total_tickets = new TableColumn<AnalyticResult<Airline>, Number>("Economy Total Tickets");
         economy_total_tickets.setCellValueFactory(
-          reservation -> new ReadOnlyStringWrapper(reservation.getValue().results.get("economy_total_tickets"))
+          reservation -> new ReadOnlyIntegerWrapper(Integer.parseInt(reservation.getValue().results.get("economy_total_tickets")))
         );
 
-        var price_2019 = new TableColumn<AnalyticResult<Airline>, String>("2019 Price");
+        var price_2019 = new TableColumn<AnalyticResult<Airline>, Number>("2019 Price");
         price_2019.setCellValueFactory(
-          reservation -> new ReadOnlyStringWrapper(reservation.getValue().results.get("price_2019"))
+          reservation -> new ReadOnlyIntegerWrapper(Integer.parseInt(reservation.getValue().results.get("price_2019")))
         );
 
-        var price_2018 = new TableColumn<AnalyticResult<Airline>, String>("2018 Price");
+        var price_2018 = new TableColumn<AnalyticResult<Airline>, Number>("2018 Price");
         price_2018.setCellValueFactory(
-          reservation -> new ReadOnlyStringWrapper(reservation.getValue().results.get("price_2018"))
+          reservation -> new ReadOnlyIntegerWrapper(Integer.parseInt(reservation.getValue().results.get("price_2018")))
         );
 
-        var price_2017 = new TableColumn<AnalyticResult<Airline>, String>("2017 Price");
+        var price_2017 = new TableColumn<AnalyticResult<Airline>, Number>("2017 Price");
         price_2017.setCellValueFactory(
-          reservation -> new ReadOnlyStringWrapper(reservation.getValue().results.get("price_2017"))
+          reservation -> new ReadOnlyIntegerWrapper(Integer.parseInt(reservation.getValue().results.get("price_2017")))
         );
 
         table.getColumns().setAll(
